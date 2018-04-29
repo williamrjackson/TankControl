@@ -5,9 +5,9 @@ using UnityEngine;
 public class TankControl : MonoBehaviour {
 
     [Range(-1, 1f)]
-    public float leftSpeed = 0f;
+    public float leftSpeedMultiplier = 0f;
     [Range(-1, 1f)]
-    public float rightSpeed = 0f;
+    public float rightSpeedMultiplier = 0f;
     public float speed = 10f;
     [Range(-1, 1f)]
     public float turretRotationControl = 0f;
@@ -20,7 +20,7 @@ public class TankControl : MonoBehaviour {
     public Transform canon;
     public GameObject projectile;
     public float projectileForce = 50;
-    public float fireRecoil = 5;
+    public float fireRecoilForce = 5;
 
     float m_determinedVelocityMultiplier = 0f;
     float m_CanonAngle = 0;
@@ -45,16 +45,17 @@ public class TankControl : MonoBehaviour {
     void FixedUpdate()
     {
         // Move the tank
-        rb.velocity = transform.forward * m_determinedVelocityMultiplier * speed;
+        if (IsGrounded())
+            rb.velocity = transform.forward * m_determinedVelocityMultiplier * speed;
     }
 
     void CalculateMovement()
     {
         // Tank velocity is the average value between the two speed controls.
-        m_determinedVelocityMultiplier = (leftSpeed + rightSpeed) / 2;
+        m_determinedVelocityMultiplier = (leftSpeedMultiplier + rightSpeedMultiplier) / 2;
 
         // Tank angle is the difference between the two speed controls, remapped from 4 degree to 180 degree range.
-        float rotateAngle = Remap(leftSpeed - rightSpeed, -2f, 2f, -90f, 90f);
+        float rotateAngle = Remap(leftSpeedMultiplier - rightSpeedMultiplier, -2f, 2f, -90f, 90f);
         // Apply rotation
         transform.Rotate(transform.up, rotateAngle * Time.deltaTime);
     }
@@ -83,9 +84,18 @@ public class TankControl : MonoBehaviour {
         // Shoot it forward, along the canon barrel
         newProjectile.GetComponent<Rigidbody>().AddForce(canonRotator.forward * projectileForce, ForceMode.Impulse);
         // add reverse force for recoil
-        rb.AddForce(canonRotator.forward * -fireRecoil, ForceMode.Impulse);
+        rb.AddForce(canonRotator.forward * -fireRecoilForce, ForceMode.Impulse);
     }
 
+    public bool IsGrounded()
+    {
+        bool result = false;
+        if (Physics.Raycast(transform.position, -transform.up, 1.5f))
+        { 
+            result = true;
+        }
+        return result;
+    }
     float Remap(float sourceValue, float sourceMin, float sourceMax, float destMin, float destMax)
     {
         return Mathf.Lerp(destMin, destMax, Mathf.InverseLerp(sourceMin, sourceMax, sourceValue));
