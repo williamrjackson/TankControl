@@ -33,13 +33,17 @@ public class TankControl : MonoBehaviour {
 	
 	void Update ()
     {
-        CalculateMovement();
-        HandleTurretRotation();
-        HandleCanonElevation();
         if (Input.GetKeyDown(KeyCode.Space))
         {
             FireProjectile();
         }
+    }
+
+    void LateUpdate()
+    {
+        CalculateMovement();
+        HandleTurretRotation();
+        HandleCanonElevation();
     }
 
     void FixedUpdate()

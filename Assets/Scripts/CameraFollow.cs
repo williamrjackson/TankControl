@@ -13,6 +13,5 @@ public class CameraFollow : MonoBehaviour {
     void LateUpdate () {
         transform.position = Vector3.SmoothDamp(transform.position, posTarget.position, ref velocity, followSpeed);
         transform.LookAt(lookTarget.position);
-        //transform.eulerAngles = posTarget.eulerAngles;
 	}
 }
