@@ -21,17 +21,18 @@ public class TankControl : MonoBehaviour {
     public GameObject projectile;
     public float projectileForce = 50;
     public float fireRecoilForce = 5;
+    public LineRenderer line;
 
-    float m_determinedVelocityMultiplier = 0f;
-    float m_CanonAngle = 0;
+    private float m_determinedVelocityMultiplier = 0f;
+    private float m_CanonAngle = 0;
 
-    Rigidbody rb;
+    private Rigidbody rBody;
 
-    void Start () {
-        rb = GetComponent<Rigidbody>();
+    private void Start () {
+        rBody = GetComponent<Rigidbody>();
 	}
 	
-	void Update ()
+	private void Update ()
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
@@ -39,21 +40,26 @@ public class TankControl : MonoBehaviour {
         }
     }
 
-    void LateUpdate()
+    private void LateUpdate()
     {
         CalculateMovement();
         HandleTurretRotation();
         HandleCanonElevation();
+        line.positionCount = 50;
+        for (int i = 0; i < 50; i++)
+        {
+            line.SetPosition(i, PlotProjectileTrajectory(projectile.transform.position, canonRotator.forward * projectileForce, Remap(i, 0, 50, 0, 5)));
+        }
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
         // Move the tank
         if (IsGrounded())
-            rb.velocity = transform.forward * m_determinedVelocityMultiplier * speed;
+            rBody.velocity = transform.forward * m_determinedVelocityMultiplier * speed;
     }
 
-    void CalculateMovement()
+    private void CalculateMovement()
     {
         // Tank velocity is the average value between the two speed controls.
         m_determinedVelocityMultiplier = (leftSpeedMultiplier + rightSpeedMultiplier) / 2;
@@ -64,20 +70,20 @@ public class TankControl : MonoBehaviour {
         transform.Rotate(transform.up, rotateAngle * Time.deltaTime);
     }
 
-    void HandleTurretRotation()
+    private void HandleTurretRotation()
     {
-        // Rotate the turret at based on turret rotation control input
+        // Rotate the turret based on turret rotation control input
         turretRotator.Rotate(turretRotator.up, turretRotationSpeed * turretRotationControl * Time.deltaTime);
     }
 
-    void HandleCanonElevation()
+    private void HandleCanonElevation()
     {
         // Adjust canon angle based on input. Limit to 25 degrees.
         m_CanonAngle = Mathf.Clamp(m_CanonAngle + (canonElevationSpeed * -canonElevationControl * Time.deltaTime), -25.0f, 0f);
         canonRotator.localEulerAngles = new Vector3(m_CanonAngle, 0, 0);
     }
 
-    void FireProjectile()
+    private void FireProjectile()
     {
         // Instantiate copy of projectile template
         GameObject newProjectile = Instantiate(projectile);
@@ -88,10 +94,15 @@ public class TankControl : MonoBehaviour {
         // Shoot it forward, along the canon barrel
         newProjectile.GetComponent<Rigidbody>().AddForce(canonRotator.forward * projectileForce, ForceMode.Impulse);
         // add reverse force for recoil
-        rb.AddForce(canonRotator.forward * -fireRecoilForce, ForceMode.Impulse);
+        rBody.AddForce(canonRotator.forward * -fireRecoilForce, ForceMode.Impulse);
     }
 
-    public bool IsGrounded()
+    private Vector3 PlotProjectileTrajectory(Vector3 startPos, Vector3 initialVel, float time)
+    {
+        return startPos + initialVel * time + Physics.gravity * Mathf.Pow(time, 2) * 0.5f;
+    }
+
+    private bool IsGrounded()
     {
         bool result = false;
         if (Physics.Raycast(transform.position, -transform.up, 1.5f))
@@ -100,7 +111,7 @@ public class TankControl : MonoBehaviour {
         }
         return result;
     }
-    float Remap(float sourceValue, float sourceMin, float sourceMax, float destMin, float destMax)
+    private float Remap(float sourceValue, float sourceMin, float sourceMax, float destMin, float destMax)
     {
         return Mathf.Lerp(destMin, destMax, Mathf.InverseLerp(sourceMin, sourceMax, sourceValue));
     }

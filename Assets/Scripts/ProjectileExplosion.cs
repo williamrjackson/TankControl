@@ -14,7 +14,7 @@ public class ProjectileExplosion : MonoBehaviour {
 
     IEnumerator KillMe (float time)
     {
-        yield return new WaitForSeconds(time);
+        yield return new WaitForSeconds(time * 2);
         Destroy(gameObject);
     }
 }
