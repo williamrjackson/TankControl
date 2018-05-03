@@ -30,6 +30,7 @@ public class TankControl : MonoBehaviour {
 
     private void Start () {
         rBody = GetComponent<Rigidbody>();
+        line.useWorldSpace = true;
 	}
 	
 	private void Update ()
@@ -45,10 +46,21 @@ public class TankControl : MonoBehaviour {
         CalculateMovement();
         HandleTurretRotation();
         HandleCanonElevation();
-        line.positionCount = 50;
-        for (int i = 0; i < 50; i++)
+        int maxLineSegments = 50;
+        Vector3 lastLinePos = projectile.transform.position;
+        for (int i = 0; i < maxLineSegments; i++)
         {
-            line.SetPosition(i, PlotProjectileTrajectory(projectile.transform.position, canonRotator.forward * projectileForce, Remap(i, 0, 50, 0, 5)));
+            Vector3 nextLinePos = PlotProjectileTrajectory(projectile.transform.position, canonRotator.forward * projectileForce, Remap(i, 0, maxLineSegments, 0, 5));
+            line.positionCount = i + 1;
+            line.SetPosition(i, nextLinePos);
+            RaycastHit hit;
+            Physics.Raycast(lastLinePos, nextLinePos - lastLinePos, out hit, Vector3.Distance(nextLinePos, lastLinePos));
+            if (hit.collider != null)
+            {
+                print(hit.collider.name);
+                break;
+            }
+            lastLinePos = nextLinePos;
         }
     }
 
