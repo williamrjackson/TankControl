@@ -19,12 +19,13 @@ public class TankControl : MonoBehaviour {
     public Transform canonRotator;
     public Transform canon;
     public GameObject projectile;
-    public float projectileForce = 50;
-    public float fireRecoilForce = 5;
+    public float projectileForce = 50f;
+    public float fireRecoilForce = 5f;
     public LineRenderer line;
+    public Transform cameraTarget;
 
     private float m_determinedVelocityMultiplier = 0f;
-    private float m_CanonAngle = 0;
+    private float m_CanonAngle = 0f;
 
     private Rigidbody rBody;
 
@@ -35,7 +36,27 @@ public class TankControl : MonoBehaviour {
 	
 	private void Update ()
     {
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetButton("LeftShoulder"))
+        {
+            leftSpeedMultiplier = -1f;
+        }
+        else
+        {
+            leftSpeedMultiplier = Input.GetAxis("LeftTrigger");
+        }
+        if (Input.GetButton("RightShoulder"))
+        {
+            rightSpeedMultiplier = -1f;
+        }
+        else
+        {
+            rightSpeedMultiplier = Input.GetAxis("RightTrigger");
+        }
+
+        turretRotationControl = Input.GetAxis("Horizontal");
+        canonElevationControl = Input.GetAxis("Vertical");
+
+        if (Input.GetKeyDown(KeyCode.Space) || Input.GetButtonDown("Fire1"))
         {
             FireProjectile();
         }
@@ -43,7 +64,6 @@ public class TankControl : MonoBehaviour {
 
     private void LateUpdate()
     {
-        CalculateMovement();
         HandleTurretRotation();
         HandleCanonElevation();
         int maxLineSegments = 50;
@@ -57,7 +77,7 @@ public class TankControl : MonoBehaviour {
             Physics.Raycast(lastLinePos, nextLinePos - lastLinePos, out hit, Vector3.Distance(nextLinePos, lastLinePos));
             if (hit.collider != null)
             {
-                print(hit.collider.name);
+                //print(hit.collider.name);
                 break;
             }
             lastLinePos = nextLinePos;
@@ -66,9 +86,13 @@ public class TankControl : MonoBehaviour {
 
     private void FixedUpdate()
     {
+        CalculateMovement();
+
         // Move the tank
-        if (IsGrounded())
+        if (IsGrounded() && m_determinedVelocityMultiplier != 0)
+        {
             rBody.velocity = transform.forward * m_determinedVelocityMultiplier * speed;
+        }
     }
 
     private void CalculateMovement()
@@ -76,10 +100,14 @@ public class TankControl : MonoBehaviour {
         // Tank velocity is the average value between the two speed controls.
         m_determinedVelocityMultiplier = (leftSpeedMultiplier + rightSpeedMultiplier) / 2;
 
-        // Tank angle is the difference between the two speed controls, remapped from 4 degree to 180 degree range.
-        float rotateAngle = Remap(leftSpeedMultiplier - rightSpeedMultiplier, -2f, 2f, -90f, 90f);
-        // Apply rotation
-        transform.Rotate(transform.up, rotateAngle * Time.deltaTime);
+        // Only force rotation if we're on the ground. Otherwise physics is in charge.
+        if (IsGrounded())
+        {
+            // Tank angle is the difference between the two speed controls, remapped from 4 degree to 180 degree range.
+            float rotateAngle = Remap(leftSpeedMultiplier - rightSpeedMultiplier, -2f, 2f, -90f, 90f);
+            // Apply rotation
+            transform.Rotate(transform.up, rotateAngle * Time.fixedDeltaTime);
+        }
     }
 
     private void HandleTurretRotation()
@@ -116,12 +144,12 @@ public class TankControl : MonoBehaviour {
 
     private bool IsGrounded()
     {
-        bool result = false;
+        bool bIsGrounded = false;
         if (Physics.Raycast(transform.position, -transform.up, 1.5f))
-        { 
-            result = true;
+        {
+            bIsGrounded = true;
         }
-        return result;
+        return bIsGrounded;
     }
     private float Remap(float sourceValue, float sourceMin, float sourceMax, float destMin, float destMax)
     {
