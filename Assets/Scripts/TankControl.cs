@@ -26,7 +26,7 @@ public class TankControl : MonoBehaviour {
 
     private float m_determinedVelocityMultiplier = 0f;
     private float m_CanonAngle = 0f;
-
+    private Vector3 m_GroundNormal;
     private Rigidbody rBody;
 
     private void Start () {
@@ -36,6 +36,7 @@ public class TankControl : MonoBehaviour {
 	
 	private void Update ()
     {
+#if false
         if (Input.GetButton("LeftShoulder"))
         {
             leftSpeedMultiplier = -1f;
@@ -55,7 +56,7 @@ public class TankControl : MonoBehaviour {
 
         turretRotationControl = Input.GetAxis("Horizontal");
         canonElevationControl = Input.GetAxis("Vertical");
-
+#endif
         if (Input.GetKeyDown(KeyCode.Space) || Input.GetButtonDown("Fire1"))
         {
             FireProjectile();
@@ -91,7 +92,9 @@ public class TankControl : MonoBehaviour {
         // Move the tank
         if (IsGrounded() && m_determinedVelocityMultiplier != 0)
         {
-            rBody.velocity = transform.forward * m_determinedVelocityMultiplier * speed;
+            rBody.velocity = Vector3.Cross(transform.right, m_GroundNormal) * m_determinedVelocityMultiplier * speed;
+            float sideSpeed = transform.InverseTransformDirection(rBody.velocity).x;
+            rBody.AddForce(Vector3.Cross(transform.right, Vector3.up) * -sideSpeed * 100);
         }
     }
 
@@ -145,10 +148,14 @@ public class TankControl : MonoBehaviour {
     private bool IsGrounded()
     {
         bool bIsGrounded = false;
-        if (Physics.Raycast(transform.position, -transform.up, 1.5f))
+
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position, -transform.up, out hit, 1.5f))
         {
+            m_GroundNormal = hit.normal;
             bIsGrounded = true;
         }
+
         return bIsGrounded;
     }
     private float Remap(float sourceValue, float sourceMin, float sourceMax, float destMin, float destMax)
